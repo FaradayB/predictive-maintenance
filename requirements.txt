@@ -1,0 +1,48 @@
+# =============================================================================
+# PredictiveCare — Vehicle Predictive Maintenance
+# Full dependency list for Docker and local development
+# Requires Python 3.11+
+# =============================================================================
+
+# ── API Backend ───────────────────────────────────────────────────────────────
+fastapi                     # REST API framework — serves both tracks via HTTP
+uvicorn[standard]           # ASGI server — runs the FastAPI app
+
+# ── Jupyter Environment (for notebooks) ──────────────────────────────────────
+jupyterlab                  # Recommended UI for running research notebooks
+notebook                    # Classic Jupyter notebook interface (alternative)
+ipykernel                   # Python kernel for Jupyter
+nbformat                    # Notebook file read/write (.ipynb)
+
+# ── RAG Pipeline ─────────────────────────────────────────────────────────────
+langchain                        # Core LangChain orchestration layer
+langchain-core                   # Base abstractions: Documents, Runnables, Prompts
+langchain-community              # TextLoader for reading .md SOP files
+langchain-google-genai           # Google Gemini: embeddings + LLM chat models
+langchain-chroma                 # ChromaDB vector store integration
+langchain-text-splitters         # RecursiveCharacterTextSplitter for chunking
+chromadb                         # Vector store — persists SOP embeddings to disk
+google-genai                     # Google Generative AI SDK (underlying client)
+python-dotenv                    # Loads environment variables from .env file
+
+# ── Monitoring ────────────────────────────────────────────────────────────────
+prometheus-client           # Exposes /metrics endpoint scraped by Prometheus
+
+# ── Web Application ───────────────────────────────────────────────────────────
+streamlit                   # UI framework — Technician (:8501) + Owner (:8502)
+
+# ── Database ──────────────────────────────────────────────────────────────────
+psycopg2-binary             # PostgreSQL connector
+
+# ── Core Data Handling ────────────────────────────────────────────────────────
+pandas                      # DataFrame operations, Excel reading, CSV export
+numpy                       # Numerical operations, sensor array construction
+openpyxl                    # Reads Vehicle_Sensor_TestSet_v2.xlsx for DB seeding
+
+# ── Machine Learning ──────────────────────────────────────────────────────────
+scikit-learn                # ML classifiers: SVM (Track 1), LogReg (Track 2)
+joblib                      # Model serialisation: saves/loads .pkl files
+
+# ── Visualisation ─────────────────────────────────────────────────────────────
+matplotlib                  # Charts in research notebooks and dashboard.py
+seaborn                     # Statistical plots in model research notebook

@@ -1,0 +1,150 @@
+services:
+
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: predictivecare_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       vehicle_maintenance
+      POSTGRES_USER:     vpm_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vpm_user -d vehicle_maintenance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── FastAPI Backend ─────────────────────────────────────────────────────────
+  api:
+    build: .
+    container_name: predictivecare_api
+    restart: unless-stopped
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8010
+    environment:
+      GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
+      GOOGLE_EMBEDDING: ${GOOGLE_EMBEDDING}
+      GOOGLE_MODEL:     ${GOOGLE_MODEL}
+      DB_HOST:          db
+      DB_PORT:          5432
+      DB_NAME:          vehicle_maintenance
+      DB_USER:          vpm_user
+      DB_PASSWORD:      ${DB_PASSWORD}
+      DATASET_PATH:     ${DATASET_PATH}
+      API_URL:          http://localhost:8010
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+    ports:
+      - "8010:8010"
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Technician App ──────────────────────────────────────────────────────────
+  technician:
+    build: .
+    container_name: predictivecare_technician
+    restart: unless-stopped
+    command: streamlit run app_technician.py --server.port 8501 --server.address 0.0.0.0 --server.baseUrlPath /technician
+    environment:
+      API_URL:          http://api:8010
+      GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
+      GOOGLE_EMBEDDING: ${GOOGLE_EMBEDDING}
+      GOOGLE_MODEL:     ${GOOGLE_MODEL}
+      DB_HOST:          db
+      DB_PORT:          5432
+      DB_NAME:          vehicle_maintenance
+      DB_USER:          vpm_user
+      DB_PASSWORD:      ${DB_PASSWORD}
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./logs:/app/logs
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
+
+  # ── Owner App ───────────────────────────────────────────────────────────────
+  owner:
+    build: .
+    container_name: predictivecare_owner
+    restart: unless-stopped
+    command: streamlit run app_owner.py --server.port 8502 --server.address 0.0.0.0 --server.baseUrlPath /owner
+    environment:
+      API_URL:          http://api:8010
+      GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
+      GOOGLE_EMBEDDING: ${GOOGLE_EMBEDDING}
+      GOOGLE_MODEL:     ${GOOGLE_MODEL}
+      DB_HOST:          db
+      DB_PORT:          5432
+      DB_NAME:          vehicle_maintenance
+      DB_USER:          vpm_user
+      DB_PASSWORD:      ${DB_PASSWORD}
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./logs:/app/logs
+    ports:
+      - "8502:8502"
+    depends_on:
+      - api
+
+  # ── Prometheus ──────────────────────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: predictivecare_prometheus
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+
+  # ── Grafana ─────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: predictivecare_grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+      GF_SERVER_ROOT_URL:         "%(protocol)s://%(domain)s"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  # ── Nginx Reverse Proxy ─────────────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: predictivecare_nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - technician
+      - owner
+      - grafana
+      - api
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

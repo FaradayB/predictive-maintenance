@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.save
+.env
+.env.*
+!.env.example
+logs/
+*.log
+.venv/
+.conda/
