@@ -3,7 +3,7 @@
 
 > *"Most vehicles don't break down from bad parts — they break down because no one saw it coming."*
 
-PredictiveCare is an end-to-end AI system that detects vehicle fault patterns **before warning lights appear**, delivering a structured diagnostic brief to workshop technicians and a plain-language Bahasa Indonesia alert to vehicle owners — grounded in Standard Operating Procedure documents via a RAG pipeline.
+PredictiveCare is an end-to-end AI system that detects vehicle fault patterns **before warning lights appear**, delivering a structured diagnostic brief to workshop technicians and a plain-language alert to vehicle owners, grounded in Standard Operating Procedure documents via a RAG pipeline.
 
 ---
 
@@ -33,11 +33,11 @@ SOP: sop_track1_*.md                 SOP: sop_track2_*.md
 ChromaDB vector store                ChromaDB vector store
         │                                      │
         ▼                                      ▼
-Technician Fault Brief               Push Alert — Bahasa Indonesia
+Technician Fault Brief               Push Alert (owner-facing)   
 (English, structured, cited)         (Plain language, no sensor values)
-+ Follow-up Chat (English)           + Follow-up Chat (Bahasa Indonesia)
++ Follow-up Chat (English)           + Follow-up Chat (English)
         │                                      │
-app_technician.py :8501              app_owner.py :8502
+apps/technician.py :8501              apps/owner.py :8502
 
 FastAPI Backend :8010 ← both apps call this
 Prometheus :9090 ← scrapes :8000/metrics
@@ -51,42 +51,36 @@ Nginx :80        ← routes domains to correct app
 
 ```
 predictivecare/
-├── app_technician.py              # Streamlit tablet UI — Track 1
-├── app_owner.py                   # Streamlit mobile UI — Track 2
-├── rag_pipeline.py                # RAG: load → chunk → embed → store → retrieve
-├── llm_chain.py                   # LLM prompt chains (Track 1 + Track 2)
-├── monitoring.py                  # Prometheus metrics definitions
-├── database.py                    # PostgreSQL connection + queries + averaging
-│
-├── src/
-│   ├── __init__.py
-│   ├── main.py                    # FastAPI backend — all prediction endpoints
+├── src/predictivecare/            # Installable package (pip install -e .)
+│   ├── config.py                  # Centralised keys, model names, paths
+│   ├── features.py                # Canonical feature order (shared: train + inference)
+│   ├── api.py                     # FastAPI backend: prediction endpoints
+│   ├── rag.py                     # RAG: load, chunk, embed, store, retrieve
+│   ├── llm.py                     # LLM prompt chains (Track 1 + Track 2)
+│   ├── database.py                # PostgreSQL connection, queries, averaging
 │   ├── safety.py                  # Input validation + output guardrails
 │   ├── logger.py                  # Structured JSONL request logging
-│   ├── eval_runner.py             # Batch evaluation via API endpoints
+│   ├── monitoring.py              # Prometheus metrics
 │   └── dashboard.py               # Cost + performance report generator
 │
-├── docs/
-│   ├── sop_track1_technician_fault_diagnosis.md   # RAG corpus — Track 1
-│   └── sop_track2_owner_risk_alert.md             # RAG corpus — Track 2
+├── apps/
+│   ├── technician.py              # Streamlit tablet UI (Track 1, :8501)
+│   └── owner.py                   # Streamlit mobile UI (Track 2, :8502)
 │
-├── ml_models/
-│   ├── track1_fault_classifier.pkl      # Trained SVM — 8 fault classes
-│   └── track2_risk_classifier.pkl       # Trained LogReg — 4 risk levels
+├── ml/
+│   ├── train.py                   # Train + select both classifiers -> models/
+│   └── evaluate_llm.py            # LLM-as-judge over generated briefs/alerts
 │
-├── notebooks/
-│   ├── Vehicle_Predictive_Maintenance_Model_Research.ipynb
-│   ├── rag_pipeline_notebook.ipynb
-│   └── llm_chain_notebook.ipynb
+├── docs/                          # SOP knowledge base (RAG corpus, Track 1 + 2)
+├── data/                          # Training dataset + test set (.xlsx)
+├── models/                        # Trained .pkl (gitignored; run ml/train.py)
+├── deploy/                        # nginx.conf, prometheus.yml, grafana/
+├── tests/                         # Unit tests (safety, features, config)
+├── scripts/stress_test.py
 │
-├── Dockerfile                     # Python app image
-├── docker-compose.yml             # All 7 services: app + db + monitoring + proxy
-├── nginx.conf                     # Reverse proxy — routes domains to apps
-├── prometheus.yml                 # Prometheus scrape config
-├── Vehicle_Sensor_TestSet_v2.xlsx # Test dataset: 600 T1 rows + 140 T2 rows
-├── .env                           # Secret keys — never commit (see .env.example)
-├── .env.example                   # Template for .env
-└── requirements.txt               # All Python dependencies with documentation
+├── Dockerfile, docker-compose.yml # 7 services: apps + db + monitoring + proxy
+├── pyproject.toml, requirements.txt
+└── .env.example                   # Copy to .env and add your keys
 ```
 
 ---
@@ -111,19 +105,18 @@ Fill in:
 
 ```env
 GOOGLE_API_KEY=your_google_api_key_here
-GOOGLE_EMBEDDING=gemini-embedding-2
-GOOGLE_MODEL=gemini-3.1-flash-lite
+GOOGLE_EMBEDDING=models/text-embedding-004
+GOOGLE_MODEL=gemini-2.0-flash
 DB_PASSWORD=StrongPassword123
 GRAFANA_PASSWORD=YourGrafanaPassword123
-DATASET_PATH=Vehicle_Sensor_TestSet_v2.xlsx
 ```
 
 Get a free Google API key at: https://aistudio.google.com/app/apikey
 
-### 3. Edit nginx.conf with your domain
+### 3. Edit deploy/nginx.conf with your domain
 
 ```bash
-nano nginx.conf
+nano deploy/nginx.conf
 ```
 
 Replace all 4 occurrences of `YOURDOMAIN.COM` with your actual domain.
@@ -139,8 +132,8 @@ Starts 7 containers: PostgreSQL, FastAPI, Technician app, Owner app, Prometheus,
 ### 5. Seed database and build vector store
 
 ```bash
-docker compose exec api python3 database.py
-docker compose exec api python3 rag_pipeline.py
+docker compose exec api python -m predictivecare.database
+docker compose exec api python -m predictivecare.rag
 ```
 
 ### 6. Verify everything is running
@@ -148,6 +141,18 @@ docker compose exec api python3 rag_pipeline.py
 ```bash
 docker compose ps
 curl http://localhost:8010/health
+```
+
+### Run locally without Docker
+
+```bash
+pip install -e .                   # install the predictivecare package
+python ml/train.py                 # train the models into models/ (gitignored)
+python -m predictivecare.rag       # build the RAG vector store (needs GOOGLE_API_KEY)
+uvicorn predictivecare.api:app --port 8010
+# then, in separate terminals:
+streamlit run apps/technician.py --server.port 8501
+streamlit run apps/owner.py --server.port 8502
 ```
 
 ### 7. Generate evaluation data
@@ -207,7 +212,7 @@ docker compose logs technician
 docker compose restart api
 
 # Run a command inside a container
-docker compose exec api python3 database.py
+docker compose exec api python -m predictivecare.database
 
 # Rebuild after code changes
 docker compose up -d --build
@@ -222,7 +227,7 @@ docker compose up -d --build
 | GET | `/health` | System component status |
 | GET | `/api/v1/plates?track=1` | List all plate numbers |
 | POST | `/api/v1/track1/diagnose` | Track 1 — fault classification + LLM brief |
-| POST | `/api/v1/track2/alert` | Track 2 — risk detection + Bahasa Indonesia alert |
+| POST | `/api/v1/track2/alert` | Track 2: risk detection + English owner alert |
 
 Full interactive docs: `http://api.YOURDOMAIN.COM/docs`
 
@@ -230,18 +235,24 @@ Full interactive docs: `http://api.YOURDOMAIN.COM/docs`
 
 ## ML Models
 
-Two scikit-learn classifiers trained on 2,300 simulated sensor readings:
+`ml/train.py` trains seven candidate classifiers per track inside a
+StandardScaler pipeline and keeps the best per track by 5-fold cross-validated
+weighted F1. The saved artifact is the full pipeline, so inference does not scale
+features separately. Trained on simulated sensor data.
 
-| Track | Algorithm | Classes | CV F1 |
+| Track | Selected model | Classes | Weighted F1 (test) |
 |---|---|---|---|
-| Track 1 — Fault Classifier | SVM (RBF kernel) | 8 fault types | 0.9508 |
-| Track 2 — Risk Classifier | Logistic Regression | 4 risk levels | 0.9918 |
+| Track 1: Fault Classifier | best of 7 by CV F1 | 8 fault types | ~0.97 |
+| Track 2: Risk Classifier | best of 7 by CV F1 | 4 risk levels | ~0.99 |
+
+Selection is data-driven (Extra Trees currently wins both tracks). Run
+`python ml/train.py` to reproduce the models and print the full per-candidate table.
 
 **Input:** 30-day averaged telemetry (Track 1) or 7-reading daily average (Track 2)
 
 To retrain from scratch:
 ```bash
-python3 vehicle_predictive_maintenance_ml.py
+python ml/train.py
 ```
 
 ---
@@ -284,14 +295,14 @@ Fault and risk classes are **coherently aligned** — an owner with High Risk in
 | 6 | Oil Pressure Issue | **Critical — do not drive** |
 | 7 | Transmission Problem | High — inspect within 3 days |
 
-### Track 2 — Risk Classes
+### Track 2: Risk Classes
 
-| Class | Level | Bahasa Label | Owner Action |
-|---|---|---|---|
-| 0 | No Risk | Tidak Ada Risiko | No notification sent |
-| 1 | Low Risk | Risiko Rendah | Monitor 3–5 days |
-| 2 | Medium Risk | Risiko Sedang | Schedule service within 7 days |
-| 3 | High Risk | Risiko Tinggi | Stop driving — call +62-800-000-0000 |
+| Class | Level | Owner Action |
+|---|---|---|
+| 0 | No Risk | No notification sent |
+| 1 | Low Risk | Monitor 3-5 days |
+| 2 | Medium Risk | Schedule service within 7 days |
+| 3 | High Risk | Stop driving, call +62-800-000-0000 |
 
 ---
 
@@ -305,7 +316,7 @@ Fault and risk classes are **coherently aligned** — an owner with High Risk in
 
 **Task-type embeddings:** `text-embedding-004` uses `retrieval_document` for indexing and `retrieval_query` at retrieval time — Google's recommended split for better retrieval accuracy.
 
-**Follow-up chat:** Both apps include a post-prediction chat grounded in the same SOP context. Technician chat answers in English; owner chat answers in Bahasa Indonesia and never reveals raw sensor values.
+**Follow-up chat:** Both apps include a post-prediction chat grounded in the same SOP context. Technician chat answers in English; owner chat also answers in English and never reveals raw sensor values.
 
 **Safety layer:** `src/safety.py` validates inputs (plate format, sensor ranges) before they reach the ML model, and validates LLM outputs (required sections, language detection) before they reach users.
 
@@ -315,7 +326,7 @@ Fault and risk classes are **coherently aligned** — an owner with High Risk in
 
 **Workshop Technician** — receives a pre-inspection fault brief before touching the vehicle. Knows exactly what to inspect, why, and in what order — based on 30 days of OBD telemetry trend analysis.
 
-**Vehicle Owner** — receives a plain-language push notification in Bahasa Indonesia. Never sees raw sensor values or technical codes. Knows what to do and how urgently.
+**Vehicle Owner**: receives a plain-language push notification in English. Never sees raw sensor values or technical codes. Knows what to do and how urgently.
 
 ---
 
