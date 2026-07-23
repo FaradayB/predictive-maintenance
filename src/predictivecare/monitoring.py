@@ -21,7 +21,7 @@
    vpm_output_valid_total       Counter   — LLM output passed/failed guardrails
 
  Usage:
-   from monitoring import record_llm_query, set_active_sessions, start_metrics_server
+   from predictivecare.monitoring import record_llm_query, set_active_sessions, start_metrics_server
    start_metrics_server(port=8000)
    record_llm_query(track=1, result=result, model="gemini-2.0-flash", ...)
 =============================================================================
