@@ -35,16 +35,15 @@ from sklearn.metrics import (
 from dotenv import load_dotenv
 
 # Add project root to path so imports work
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from database import (
+from predictivecare.database import (
     get_all_plates,
     get_track1_avg_sensors,
     get_track2_avg_sensors,
 )
-from src.logger import log_request
-from monitoring import record_track1_query, record_track2_query
-from src.safety import validate_request
+from predictivecare.logger import log_request
+from predictivecare.monitoring import record_track1_query, record_track2_query
+from predictivecare.safety import validate_request
 
 load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
