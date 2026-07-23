@@ -43,7 +43,7 @@ def api_plates(track: int = 2) -> list:
  
 # ── Monitoring ─────────────────────────────────────────────────────────────
 try:
-    from monitoring import start_metrics_server, set_active_sessions
+    from predictivecare.monitoring import start_metrics_server, set_active_sessions
     try:
         start_metrics_server(port=8000)
     except Exception:
@@ -166,19 +166,19 @@ h3 { font-size: 0.8rem !important; font-weight: 600 !important; color: var(--mut
 # ─────────────────────────────────────────────────────────────────────────────
  
 RISK_META = {
-    0: ("Tidak Ada Risiko", "none",   "🟢", "Kendaraan Anda dalam kondisi baik"),
-    1: ("Risiko Rendah",    "low",    "🟡", "Pantau kondisi kendaraan"),
-    2: ("Risiko Sedang",    "medium", "🟠", "Jadwalkan servis segera"),
-    3: ("Risiko Tinggi",    "high",   "🔴", "Inspeksi segera diperlukan!"),
+    0: ("No Risk", "none",   "🟢", "Your vehicle is in good condition"),
+    1: ("Low Risk",    "low",    "🟡", "Monitor the vehicle's condition"),
+    2: ("Medium Risk",    "medium", "🟠", "Schedule a service soon"),
+    3: ("High Risk",    "high",   "🔴", "Immediate inspection required!"),
 }
  
 SENSOR_DISPLAY = {
-    "coolant_temp_c":     ("Suhu Mesin",   "°C"),
-    "oil_pressure_psi":   ("Tekanan Oli",  "PSI"),
-    "battery_voltage_v":  ("Daya Baterai", "V"),
-    "tpms_psi":           ("Tekanan Ban",  "PSI"),
-    "fuel_level_pct":     ("Bahan Bakar",  "%"),
-    "speed_kmh":          ("Kecepatan",    "km/h"),
+    "coolant_temp_c":     ("Engine Temp",   "°C"),
+    "oil_pressure_psi":   ("Oil Pressure",  "PSI"),
+    "battery_voltage_v":  ("Battery", "V"),
+    "tpms_psi":           ("Tire Pressure",  "PSI"),
+    "fuel_level_pct":     ("Fuel Level",  "%"),
+    "speed_kmh":          ("Speed",    "km/h"),
 }
  
 SENSOR_THRESHOLDS_T2 = {
@@ -219,28 +219,28 @@ def sensor_status_t2(key, value):
  
 @st.cache_resource(show_spinner=False)
 def load_vectorstore():
-    from rag_pipeline import build_vectorstore
+    from predictivecare.rag import build_vectorstore
     return build_vectorstore(force_rebuild=False)
  
 @st.cache_resource(show_spinner=False)
 def load_chains(_vs):
-    from llm_chain import build_chains
+    from predictivecare.llm import build_chains
     return build_chains(_vs)
  
  
 def run_owner_chat(question: str, result: dict) -> str:
     """
-    Follow-up chat for the owner — answers in Bahasa Indonesia,
+    Follow-up chat for the owner. Answers in English,
     using the alert and SOP context as grounding.
     Never reveals raw sensor values or technical terms.
     """
     try:
         # ── Safety: sanitise query before hitting the LLM ─────────────────
         try:
-            from src.safety import sanitise_chat_query
+            from predictivecare.safety import sanitise_chat_query
             ok, cleaned = sanitise_chat_query(question, track=2)
             if not ok:
-                return f"⚠️ Maaf, pertanyaan Anda tidak dapat diproses: {cleaned}"
+                return f"⚠️ Sorry, your question could not be processed: {cleaned}"
             question = cleaned
         except ImportError:
             pass
@@ -251,7 +251,7 @@ def run_owner_chat(question: str, result: dict) -> str:
         if st.session_state.chains is None:
             st.session_state.chains = load_chains(st.session_state.vectorstore)
  
-        from rag_pipeline import get_retriever, format_context
+        from predictivecare.rag import get_retriever, format_context
         from langchain_core.prompts import ChatPromptTemplate
         from langchain_core.output_parsers import StrOutputParser
  
@@ -260,24 +260,24 @@ def run_owner_chat(question: str, result: dict) -> str:
         context   = format_context(docs)
  
         risk_label = result.get("risk_label", "Unknown")
-        alert_text = result.get("alert", "Tidak tersedia")
- 
-        system = f"""Kamu adalah asisten kendaraan yang membantu pemilik kendaraan.
-Pemilik kendaraan sudah menerima peringatan ini:
- 
-Status risiko: {risk_label}
-Pesan peringatan:
+        alert_text = result.get("alert", "Not available")
+
+        system = f"""You are a vehicle assistant that helps vehicle owners.
+The owner has already received this alert:
+
+Risk status: {risk_label}
+Alert message:
 {alert_text}
- 
-Konteks SOP:
+
+SOP context:
 {context}
- 
-Aturan penting:
-- Jawab HANYA dalam Bahasa Indonesia yang mudah dipahami.
-- JANGAN menyebut nama sensor teknis atau nilai sensor mentah.
-- JANGAN memberikan informasi di luar konteks peringatan dan SOP di atas.
-- Tetap tenang, jelas, dan membantu.
-- Jika pertanyaan di luar konteks kendaraan, tolak dengan sopan.
+
+Important rules:
+- Answer ONLY in plain, easy-to-understand English.
+- Do NOT mention technical sensor names or raw sensor values.
+- Do NOT give any information outside the alert and SOP context above.
+- Stay calm, clear, and helpful.
+- If a question is outside the vehicle context, decline politely.
 """
  
         llm    = st.session_state.chains["llm"]
@@ -300,7 +300,7 @@ st.markdown("""
 <div class="topbar">
     <div>
         <div class="topbar-logo">🚗 PredictiveCare</div>
-        <div class="topbar-sub">Pemantauan Kesehatan Kendaraan</div>
+        <div class="topbar-sub">Vehicle Health Monitoring</div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -309,7 +309,7 @@ st.markdown("""
 # PLATE SELECTOR
 # ─────────────────────────────────────────────────────────────────────────────
  
-st.markdown("### Pilih Kendaraan Anda")
+st.markdown("### Select Your Vehicle")
  
 try:
     plates = api_plates(track=2)
@@ -317,11 +317,11 @@ except Exception:
     plates = []
  
 if plates:
-    selected_plate = st.selectbox("Nomor Plat", options=plates, label_visibility="collapsed")
+    selected_plate = st.selectbox("Plate Number", options=plates, label_visibility="collapsed")
 else:
-    selected_plate = st.text_input("Nomor Plat", value="B 1234 ABC", label_visibility="collapsed")
+    selected_plate = st.text_input("Plate Number", value="B 1234 ABC", label_visibility="collapsed")
  
-check_clicked = st.button("Cek Kondisi Kendaraan 🔍", use_container_width=True)
+check_clicked = st.button("Check Vehicle Condition 🔍", use_container_width=True)
  
 # ─────────────────────────────────────────────────────────────────────────────
 # LOAD & RUN (via FastAPI)
@@ -330,7 +330,7 @@ check_clicked = st.button("Cek Kondisi Kendaraan 🔍", use_container_width=True
 if check_clicked and selected_plate:
     st.session_state.chat_history = []   # clear chat on new check
  
-    with st.spinner("Memuat data kendaraan ..."):
+    with st.spinner("Loading vehicle data ..."):
         try:
             data = api_alert(selected_plate)
             st.session_state.result = data
@@ -338,7 +338,7 @@ if check_clicked and selected_plate:
                 try: set_active_sessions("owner", 1)
                 except Exception: pass
         except Exception as e:
-            st.error(f"Tidak dapat memuat data: {e}")
+            st.error(f"Could not load data: {e}")
  
 # ─────────────────────────────────────────────────────────────────────────────
 # RESULTS
@@ -376,19 +376,19 @@ if st.session_state.result:
     if risk_class == 0:
         st.markdown("""
 <div class="alert-bubble" style="border-color:#bbf7d0;">
-✅ <b>Kendaraan Anda dalam kondisi baik.</b>
+✅ <b>Your vehicle is in good condition.</b>
  
-Semua sensor berada dalam rentang normal hari ini. Tidak ada tindakan yang diperlukan.
+All sensors are within the normal range today. No action is required.
  
-Tetap pantau kondisi kendaraan Anda secara rutin.</div>
+Keep monitoring your vehicle's condition regularly.</div>
         """, unsafe_allow_html=True)
     elif alert:
         st.markdown(f'<div class="alert-bubble">{alert}</div>', unsafe_allow_html=True)
     else:
         fallbacks = {
-            1: "🟡 Pantau kondisi kendaraan Anda selama 3–5 hari ke depan.",
-            2: "🟠 Jadwalkan servis di bengkel resmi dalam 7 hari.\nHubungi: +62-800-000-0000",
-            3: "🔴 JANGAN MENGENDARAI KENDARAAN.\nHubungi layanan darurat: +62-800-000-0000",
+            1: "🟡 Monitor your vehicle over the next 3-5 days.",
+            2: "🟠 Schedule a service at an authorised workshop within 7 days.\nCall: +62-800-000-0000",
+            3: "🔴 DO NOT DRIVE THE VEHICLE.\nCall emergency service: +62-800-000-0000",
         }
         st.markdown(f'<div class="alert-bubble">{fallbacks.get(risk_class,"")}</div>', unsafe_allow_html=True)
  
@@ -423,44 +423,44 @@ Tetap pantau kondisi kendaraan Anda secara rutin.</div>
     if pills_added > 0:
         st.markdown(pills_html, unsafe_allow_html=True)
     else:
-        st.caption("Data sensor tidak tersedia.")
+        st.caption("Sensor data not available.")
  
     # ─────────────────────────────────────────────────────────────────────
-    # FOLLOW-UP CHAT (Bahasa Indonesia)
+    # FOLLOW-UP CHAT (English)
     # Shown after any diagnosis — owner can ask questions about their alert
     # ─────────────────────────────────────────────────────────────────────
     st.markdown('<hr class="chat-divider">', unsafe_allow_html=True)
-    st.markdown('<div class="chat-section-title">💬 Ada pertanyaan tentang kendaraan Anda?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="chat-section-title">💬 Have a question about your vehicle?</div>', unsafe_allow_html=True)
     st.markdown(
         '<div style="color:#8a8578;font-size:0.82rem;margin-bottom:14px;">'
-        'Tanyakan apa saja seputar kondisi kendaraan Anda. Asisten akan menjawab dalam Bahasa Indonesia.'
+        'Ask anything about your vehicle. The assistant will answer in English.'
         '</div>',
         unsafe_allow_html=True,
     )
  
-    # Suggested questions — in Bahasa Indonesia, context-aware
+    # Suggested questions, context-aware
     if risk_class == 0:
         suggestions = [
-            "Kapan sebaiknya saya servis berikutnya?",
+            "When should I get my next service?",
             "Apa yang perlu saya periksa secara rutin?",
         ]
     elif risk_class == 1:
         suggestions = [
-            "Apakah aman untuk perjalanan jauh?",
-            "Berapa lama saya bisa menunggu sebelum servis?",
-            "Apa yang harus saya pantau?",
+            "Is it safe for a long trip?",
+            "How long can I wait before servicing?",
+            "What should I keep an eye on?",
         ]
     elif risk_class == 2:
         suggestions = [
-            "Apakah kendaraan masih aman dikendarai?",
-            "Berapa lama proses servisnya?",
-            "Bengkel mana yang terdekat?",
+            "Is the vehicle still safe to drive?",
+            "How long does the service take?",
+            "Which workshop is nearest?",
         ]
     else:  # High risk
         suggestions = [
-            "Apakah saya boleh mengemudi ke bengkel?",
-            "Apa yang terjadi jika saya tetap mengendarai?",
-            "Bagaimana cara menghubungi layanan darurat?",
+            "Can I drive to the workshop?",
+            "What happens if I keep driving?",
+            "How do I contact emergency service?",
         ]
  
     st.markdown("**Pertanyaan umum:**")
@@ -477,7 +477,7 @@ Tetap pantau kondisi kendaraan Anda secara rutin.</div>
  
     # Free-text input
     user_input = st.chat_input(
-        "Ketik pertanyaan Anda ...",
+        "Type your question ...",
         key="owner_chat_input",
     )
     if user_input and user_input.strip():
@@ -517,7 +517,7 @@ Tetap pantau kondisi kendaraan Anda secara rutin.</div>
             st.rerun()
  
     # ── Evaluation detail (small, for demo) ───────────────────────────────
-    with st.expander("ℹ️ Detail evaluasi"):
+    with st.expander("ℹ️ Evaluation details"):
         st.caption(f"True Risk Class : {data.get('true_risk_class')} — {data.get('true_risk_label')}")
         st.caption(f"Predicted Class : {risk_class} — {risk_label}")
         if data.get("response_time_ms", 0) > 0:
@@ -530,7 +530,7 @@ else:
     st.markdown("""
     <div style="text-align:center;padding:32px 16px;">
         <div style="font-size:3.5rem;margin-bottom:12px;">🚗</div>
-        <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">Cek Kondisi Kendaraan Anda</div>
-        <div style="color:#8a8578;font-size:0.88rem;">Pilih nomor plat dan tekan tombol di atas.</div>
+        <div style="font-size:1rem;font-weight:700;margin-bottom:6px;">Check Your Vehicle's Condition</div>
+        <div style="color:#8a8578;font-size:0.88rem;">Select a plate number and press the button above.</div>
     </div>
     """, unsafe_allow_html=True)
