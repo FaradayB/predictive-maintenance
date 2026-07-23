@@ -11,7 +11,7 @@
  
    2. OUTPUT GUARDRAILS
       validate_brief()    — Track 1: ensure required sections are present
-      validate_alert()    — Track 2: ensure Bahasa Indonesia, no sensor values
+      validate_alert()    - Track 2: ensure English, no sensor values
 =============================================================================
 """
  
@@ -200,16 +200,16 @@ FORBIDDEN_OWNER_PATTERNS = [
     r"battery voltage sensor",
 ]
 
-BAHASA_INDICATORS = [
-    "kendaraan", "kondisi", "segera", "servis", "bengkel",
-    "risiko", "bahaya", "aman", "periksa", "hubungi",
+ENGLISH_INDICATORS = [
+    "vehicle", "condition", "service", "workshop", "risk",
+    "safe", "inspect", "contact", "engine", "action",
 ]
- 
+
 def validate_alert(alert: str) -> Tuple[bool, str]:
     """
     Validate that the LLM-generated owner alert:
     - Is not empty
-    - Contains Bahasa Indonesia indicators
+    - Contains English indicators
     - Does not contain raw sensor values or technical terms
  
     Returns:
@@ -221,10 +221,10 @@ def validate_alert(alert: str) -> Tuple[bool, str]:
  
     alert_lower = alert.lower()
  
-    # Check for Bahasa Indonesia content
-    has_bahasa = any(word in alert_lower for word in BAHASA_INDICATORS)
-    if not has_bahasa:
-        return False, "Alert does not appear to be in Bahasa Indonesia."
+    # Check for English content
+    has_english = any(word in alert_lower for word in ENGLISH_INDICATORS)
+    if not has_english:
+        return False, "Alert does not appear to be in English."
  
     # Check for forbidden patterns (raw sensor values / technical terms)
     violations = []
@@ -387,11 +387,10 @@ def sanitise_chat_query(query: str, track: int) -> tuple:
     ]
  
     vehicle_keywords_t2 = [
-        "kendaraan", "mobil", "servis", "bengkel", "aman", "bahaya",
-        "ban", "mesin", "oli", "aki", "bahan bakar", "rem",
-        "safe", "drive", "repair", "workshop", "vehicle", "car",
-        "condition", "risk", "alert", "maintenance", "check",
-        "temperature", "pressure", "fuel", "battery", "tyre",
+        "vehicle", "car", "service", "workshop", "safe", "danger",
+        "tire", "engine", "oil", "battery", "fuel", "brake",
+        "drive", "repair", "condition", "risk", "alert",
+        "maintenance", "check", "temperature", "pressure",
     ]
  
     keywords = vehicle_keywords_t1 if track == 1 else vehicle_keywords_t2
@@ -454,7 +453,7 @@ if __name__ == "__main__":
     print(f"  Brief missing sections: valid={ok}  {err}")
  
     # Alert validation
-    good_alert = "🔴 Kendaraan Anda perlu segera diperiksa di bengkel resmi."
+    good_alert = "🔴 Your vehicle needs to be inspected at an authorised workshop immediately."
     ok, err = validate_alert(good_alert)
     print(f"\n  Good alert: valid={ok}")
  
