@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The unit tests only import the light modules (safety, features, config),
+      # so we install just what they need rather than the full app stack.
+      - name: Install test deps
+        run: pip install pytest python-dotenv
+
+      - name: Run tests
+        run: pytest -q
