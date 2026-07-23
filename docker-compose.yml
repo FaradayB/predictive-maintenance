@@ -24,7 +24,7 @@ services:
     build: .
     container_name: predictivecare_api
     restart: unless-stopped
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8010
+    command: uvicorn predictivecare.api:app --host 0.0.0.0 --port 8010
     environment:
       GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
       GOOGLE_EMBEDDING: ${GOOGLE_EMBEDDING}
@@ -34,7 +34,6 @@ services:
       DB_NAME:          vehicle_maintenance
       DB_USER:          vpm_user
       DB_PASSWORD:      ${DB_PASSWORD}
-      DATASET_PATH:     ${DATASET_PATH}
       API_URL:          http://localhost:8010
     volumes:
       - ./chroma_db:/app/chroma_db
@@ -52,7 +51,7 @@ services:
     build: .
     container_name: predictivecare_technician
     restart: unless-stopped
-    command: streamlit run app_technician.py --server.port 8501 --server.address 0.0.0.0 --server.baseUrlPath /technician
+    command: streamlit run apps/technician.py --server.port 8501 --server.address 0.0.0.0 --server.baseUrlPath /technician
     environment:
       API_URL:          http://api:8010
       GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
@@ -76,7 +75,7 @@ services:
     build: .
     container_name: predictivecare_owner
     restart: unless-stopped
-    command: streamlit run app_owner.py --server.port 8502 --server.address 0.0.0.0 --server.baseUrlPath /owner
+    command: streamlit run apps/owner.py --server.port 8502 --server.address 0.0.0.0 --server.baseUrlPath /owner
     environment:
       API_URL:          http://api:8010
       GOOGLE_API_KEY:   ${GOOGLE_API_KEY}
@@ -104,7 +103,7 @@ services:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.retention.time=7d"
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
@@ -122,8 +121,8 @@ services:
       GF_SERVER_ROOT_URL:         "%(protocol)s://%(domain)s"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards
     ports:
       - "3000:3000"
     depends_on:
@@ -135,7 +134,7 @@ services:
     container_name: predictivecare_nginx
     restart: unless-stopped
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - "80:80"
     depends_on:
