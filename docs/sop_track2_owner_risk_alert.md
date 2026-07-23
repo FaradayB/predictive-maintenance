@@ -1,28 +1,28 @@
-# Standard Operating Procedure — Track 2: Vehicle Owner Risk Alert
+# Standard Operating Procedure, Track 2: Vehicle Owner Risk Alert
 
 **Document ID:** SOP-T2-001  
 **Version:** 1.0  
 **Applicable Vehicle:** Compact SUV, Crossover, MPV (2020 onwards)  
 **Detection Window:** 12-hour daily window (07:00 – 19:00 WIB)  
-**Output:** Push Alert in Bahasa Indonesia (plain language, urgency + action)
+**Output:** Push Alert in English (plain language, urgency + action)
 
 ---
 
 ## 1. Tujuan (Purpose)
 
-SOP ini mendefinisikan prosedur untuk memproses data sensor kendaraan harian, menentukan tingkat risiko, dan menghasilkan notifikasi push alert kepada pemilik kendaraan dalam Bahasa Indonesia yang mudah dipahami. Sistem ini bekerja secara otomatis setiap hari berdasarkan data IoT yang dikumpulkan sepanjang hari.
+This SOP defines the procedure for processing daily vehicle sensor data, determining the risk level, and generating an easy-to-understand push alert to the vehicle owner in English. The system runs automatically every day based on IoT data collected throughout the day.
 
-This SOP defines the procedure for processing daily vehicle sensor data, determining risk level, and generating push alert notifications to vehicle owners in plain Bahasa Indonesia. The system operates automatically each day based on IoT data collected throughout the operating window.
+This SOP defines the procedure for processing daily vehicle sensor data, determining risk level, and generating push alert notifications to vehicle owners in plain English. The system operates automatically each day based on IoT data collected throughout the operating window.
 
 ---
 
 ## 2. Lingkup (Scope)
 
-SOP ini berlaku untuk:
+This SOP applies to:
 
-- Pemilik kendaraan pribadi
-- Operator armada kendaraan komersial
-- Sistem AI yang menghasilkan notifikasi otomatis melalui Owner Alert Module
+- Private vehicle owners
+- Commercial fleet operators
+- The AI system that generates automatic notifications through the Owner Alert Module
 
 This procedure applies to:
 
@@ -55,7 +55,7 @@ The following 12 sensors are monitored across the 12-hour daily window (07:00–
 
 ## 4. Sensor Health Thresholds (Owner Perspective)
 
-| Sensor             | Normal        | Perlu Perhatian (Watch) | Bahaya (Danger) |
+| Sensor             | Normal        | Watch                   | Danger          |
 | ------------------ | ------------- | ----------------------- | --------------- |
 | TPMS               | 30 – 34 PSI   | 27 – 29 PSI             | < 25 PSI        |
 | Coolant Temp       | 85°C – 95°C   | 95°C – 105°C            | > 105°C         |
@@ -73,36 +73,36 @@ The following 12 sensors are monitored across the 12-hour daily window (07:00–
 
 The Owner Alert Module classifies daily sensor data into one of 4 risk levels:
 
-| Class | Risk Level  | Bahasa Label     | Notification Trigger                   |
-| ----- | ----------- | ---------------- | -------------------------------------- |
-| 0     | No Risk     | Tidak Ada Risiko | No notification sent                   |
-| 1     | Low Risk    | Risiko Rendah    | Monitor — informational alert          |
-| 2     | Medium Risk | Risiko Sedang    | Schedule maintenance — action required |
-| 3     | High Risk   | Risiko Tinggi    | Immediate inspection — urgent alert    |
+| Class | Risk Level  | Notification Trigger                   |
+| ----- | ----------- | -------------------------------------- |
+| 0     | No Risk     | No notification sent                   |
+| 1     | Low Risk    | Monitor, informational alert           |
+| 2     | Medium Risk | Schedule maintenance, action required  |
+| 3     | High Risk   | Immediate inspection, urgent alert     |
 
 ### Risk Level Logic
 
 The higher the number of sensors deviating from normal AND the further each deviation, the higher the risk class assigned.
 
-**Class 0 — No Risk (Tidak Ada Risiko)**
+**Class 0: No Risk**
 
 - All sensors within normal operating range
 - Typical readings: Battery ~14.2V, Coolant ~90°C, Oil Pressure ~40 PSI, TPMS ~32 PSI
 - No notification sent to owner
 
-**Class 1 — Low Risk (Risiko Rendah)**
+**Class 1: Low Risk**
 
 - One or two sensors showing minor deviation
 - Example: Battery 13.6V (early alternator wear signal), TPMS 29.5 PSI (slightly underinflated)
 - Vehicle still driveable; owner should monitor over next 3–5 days
 
-**Class 2 — Medium Risk (Risiko Sedang)**
+**Class 2: Medium Risk**
 
 - Multiple sensors showing notable deviation in combination
 - Example: Coolant ~98°C + Oil Pressure ~30 PSI + Battery ~12.8V + TPMS ~27 PSI
 - No single reading is catastrophic, but the combined pattern requires a workshop visit within 7 days
 
-**Class 3 — High Risk (Risiko Tinggi)**
+**Class 3: High Risk**
 
 - Multiple sensors in danger territory simultaneously
 - Example: Coolant ~112°C (overheating) + Oil Pressure ~18 PSI (near seizure) + Battery ~11.2V
@@ -113,31 +113,31 @@ The higher the number of sensors deviating from normal AND the further each devi
 
 ## 6. Alert Generation Procedure
 
-### Step 1 — Data Collection
+### Step 1: Data Collection
 
 IoT system collects sensor readings every 1–2 hours between 07:00 and 19:00 WIB.
 Up to 12 data points per sensor per day are aggregated into a daily summary report.
 
-### Step 2 — Risk Classification
+### Step 2: Risk Classification
 
 The Owner Alert Module processes the daily summary through the ML risk classification model.
 Output: Risk Class 0, 1, 2, or 3 for that vehicle on that day.
 
-### Step 3 — Alert Decision
+### Step 3: Alert Decision
 
 - If **Class 0**: No alert sent. System logs "no risk" status.
 - If **Class 1, 2, or 3**: Alert generation is triggered.
 
-### Step 4 — LLM Summarisation
+### Step 4: LLM Summarisation
 
 The LLM Summarizer receives:
 
 - The risk class and its label
 - The specific sensor readings that triggered the classification
 - Relevant SOP context retrieved from the RAG pipeline
-- Instruction to output in plain Bahasa Indonesia
+- Instruction to output in plain English
 
-### Step 5 — Push Alert Delivery
+### Step 5: Push Alert Delivery
 
 Alert is sent to owner's registered mobile device with:
 
@@ -151,88 +151,88 @@ Alert is sent to owner's registered mobile device with:
 
 ## 7. Push Alert Templates by Risk Class
 
-### Class 1 — Risiko Rendah (Low Risk)
+### Class 1: Low Risk
 
 ```
-🟡 PEMANTAUAN KENDARAAN ANDA
+🟡 YOUR VEHICLE HEALTH CHECK
 
-Sistem mendeteksi kondisi berikut pada kendaraan Anda hari ini:
-[Deskripsi kondisi dalam bahasa sederhana]
+The system detected the following condition in your vehicle today:
+[Description of the condition in plain language]
 
-Kendaraan masih aman dikendarai, namun kondisi ini perlu dipantau
-dalam 3–5 hari ke depan.
+The vehicle is still safe to drive, but this condition should be monitored
+over the next 3-5 days.
 
-TINDAKAN: Pantau kondisi kendaraan. Jika kondisi tidak membaik,
-segera jadwalkan servis di bengkel resmi terdekat.
+ACTION: Monitor the vehicle. If the condition does not improve,
+schedule a service at the nearest authorised workshop soon.
 ```
 
-### Class 2 — Risiko Sedang (Medium Risk)
+### Class 2: Medium Risk
 
 ```
-🟠 PERHATIAN: JADWALKAN SERVIS KENDARAAN
+🟠 ATTENTION: SCHEDULE A VEHICLE SERVICE
 
-Sistem mendeteksi kombinasi kondisi yang memerlukan perhatian segera:
-[Deskripsi kondisi dalam bahasa sederhana]
+The system detected a combination of conditions that need prompt attention:
+[Description of the condition in plain language]
 
-Kendaraan masih dapat dikendarai untuk jarak dekat, namun sebaiknya
-tidak untuk perjalanan jauh sebelum diservis.
+The vehicle can still be driven for short distances, but preferably
+not for long trips before it is serviced.
 
-TINDAKAN: Jadwalkan servis di bengkel resmi dalam 7 hari.
-Hubungi layanan darurat: +62-800-000-0000
+ACTION: Schedule a service at an authorised workshop within 7 days.
+Call emergency service: +62-800-000-0000
 ```
 
-### Class 3 — Risiko Tinggi (High Risk)
+### Class 3: High Risk
 
 ```
-🔴 PERINGATAN PENTING: INSPEKSI SEGERA DIPERLUKAN
+🔴 IMPORTANT WARNING: IMMEDIATE INSPECTION REQUIRED
 
-Sistem mendeteksi kondisi kritis pada kendaraan Anda:
-[Deskripsi kondisi spesifik dalam bahasa sederhana]
+The system detected a critical condition in your vehicle:
+[Description of the specific condition in plain language]
 
-JANGAN MENGENDARAI KENDARAAN sampai diperiksa oleh teknisi.
-Melanjutkan berkendara dapat menyebabkan kerusakan mesin serius
-atau membahayakan keselamatan.
+DO NOT DRIVE THE VEHICLE until it has been inspected by a technician.
+Continuing to drive may cause serious engine damage
+or put your safety at risk.
 
-TINDAKAN SEGERA:
-1. Hentikan kendaraan di tempat aman
-2. Matikan mesin
-3. Hubungi layanan darurat: +62-800-000-0000
-4. Jangan nyalakan kendaraan sebelum diperiksa teknisi
+IMMEDIATE ACTIONS:
+1. Stop the vehicle in a safe place
+2. Turn off the engine
+3. Call emergency service: +62-800-000-0000
+4. Do not start the vehicle until a technician has inspected it
 ```
 
 ---
 
-## 8. Alert Content Guidelines (Bahasa Indonesia)
+## 8. Alert Content Guidelines
 
 The LLM must follow these rules when generating alert content:
 
-### Wajib Dilakukan (Must Do)
+### Must Do
 
-- Gunakan bahasa yang sederhana dan dapat dimengerti oleh pemilik kendaraan non-teknis
-- Sertakan level urgensi yang jelas (pantau / jadwalkan / segera)
-- Berikan tindakan konkret yang dapat dilakukan pemilik
-- Sebut komponen atau sistem yang bermasalah dalam istilah awam (mis. "sistem pendingin" bukan "sensor temperatur coolant")
-- Sesuaikan nada dengan tingkat risiko — informatif untuk Class 1, tegas untuk Class 3
+- Use simple language that a non-technical vehicle owner can understand
+- Include a clear urgency level (monitor / schedule / immediate)
+- Give a concrete action the owner can take
+- Refer to the affected component or system in everyday terms (e.g. "the cooling system" not "coolant temperature sensor")
+- Match the tone to the risk level: informative for Class 1, firm for Class 3
 
-### Dilarang Dilakukan (Must Not Do)
+### Must Not Do
 
-- Jangan tampilkan nilai sensor mentah (mis. "Coolant: 112°C")
-- Jangan gunakan kode kesalahan OBD
-- Jangan sebut nama sensor teknis secara langsung
-- Jangan berlebihan menakut-nakuti pemilik untuk Class 1
-- Jangan meremehkan urgensi untuk Class 3
+- Do not show raw sensor values (e.g. "Coolant: 112°C")
+- Do not use OBD error codes
+- Do not name technical sensors directly
+- Do not overly alarm the owner for Class 1
+- Do not understate the urgency for Class 3
 
 ### Plain Language Translations for Owner Alerts
 
-| Technical Term              | Owner-Facing Language (Bahasa Indonesia)                    |
+| Technical Term              | Owner-Facing Language (English)                             |
 | --------------------------- | ----------------------------------------------------------- |
-| Coolant temperature high    | Mesin kendaraan mulai panas melebihi batas normal           |
-| Oil pressure low            | Tekanan oli mesin menurun — risiko kerusakan mesin          |
-| Battery voltage degrading   | Daya baterai kendaraan melemah                              |
-| TPMS below threshold        | Tekanan ban di bawah standar — risiko ban kempes atau pecah |
-| Brake pedal events elevated | Sistem rem bekerja lebih keras dari biasanya                |
-| Fuel level critical         | Bahan bakar hampir habis                                    |
-| Alternator voltage low      | Sistem pengisian daya kendaraan bermasalah                  |
+| Coolant temperature high    | The engine is starting to overheat beyond the normal limit           |
+| Oil pressure low            | Engine oil pressure is dropping, risking engine damage          |
+| Battery voltage degrading   | The vehicle battery is weakening                              |
+| TPMS below threshold        | Tire pressure is below standard, risking a flat or blowout |
+| Brake pedal events elevated | The braking system is working harder than usual                |
+| Fuel level critical         | Fuel is almost empty                                    |
+| Alternator voltage low      | The vehicle's charging system has a problem                  |
 
 ---
 
@@ -262,7 +262,7 @@ If a vehicle receives Class 3 risk classification on two or more consecutive day
 
 ## 11. No-Alert Scenarios (Class 0)
 
-No push notification is sent when all sensors are within normal range. This is a deliberate design choice — alert fatigue reduces owner responsiveness. Silence means the vehicle is healthy. Owners can view their vehicle health history at any time in the owner portal.
+No push notification is sent when all sensors are within normal range. This is a deliberate design choice: alert fatigue reduces owner responsiveness. Silence means the vehicle is healthy. Owners can view their vehicle health history at any time in the owner portal.
 
 ---
 
@@ -270,7 +270,7 @@ No push notification is sent when all sensors are within normal range. This is a
 
 - Sensor data is stored per-vehicle with anonymised vehicle ID
 - Owner personal data (name, contact) is stored separately from telemetry data
-- Alert content references vehicle condition only — no location or personal data included
+- Alert content references vehicle condition only, with no location or personal data included
 - Data retention: 90 days for raw telemetry, 12 months for risk classification logs
 
 ---
