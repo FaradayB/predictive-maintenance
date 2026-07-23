@@ -18,7 +18,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Create necessary directories
+# Install the package so `predictivecare` is importable (deps already installed)
+RUN pip install --no-cache-dir -e . --no-deps
+
+# Train the classifiers into models/ (dataset is committed; models are gitignored)
+RUN python ml/train.py
+
+# Create runtime directories
 RUN mkdir -p logs reports chroma_db
 
 # Expose ports
