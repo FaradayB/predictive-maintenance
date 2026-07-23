@@ -1,48 +1,39 @@
-# =============================================================================
-# PredictiveCare — Vehicle Predictive Maintenance
-# Full dependency list for Docker and local development
-# Requires Python 3.11+
-# =============================================================================
+# PredictiveCare dependencies. Pinned with lower bounds for reproducibility.
+# (No inline comments: this file is also parsed by pyproject.toml.)
 
-# ── API Backend ───────────────────────────────────────────────────────────────
-fastapi                     # REST API framework — serves both tracks via HTTP
-uvicorn[standard]           # ASGI server — runs the FastAPI app
+# Core data
+python-dotenv>=1.2
+numpy>=2.0
+pandas>=2.2
+openpyxl>=3.1
 
-# ── Jupyter Environment (for notebooks) ──────────────────────────────────────
-jupyterlab                  # Recommended UI for running research notebooks
-notebook                    # Classic Jupyter notebook interface (alternative)
-ipykernel                   # Python kernel for Jupyter
-nbformat                    # Notebook file read/write (.ipynb)
+# Machine learning
+scikit-learn>=1.9
+joblib>=1.5
 
-# ── RAG Pipeline ─────────────────────────────────────────────────────────────
-langchain                        # Core LangChain orchestration layer
-langchain-core                   # Base abstractions: Documents, Runnables, Prompts
-langchain-community              # TextLoader for reading .md SOP files
-langchain-google-genai           # Google Gemini: embeddings + LLM chat models
-langchain-chroma                 # ChromaDB vector store integration
-langchain-text-splitters         # RecursiveCharacterTextSplitter for chunking
-chromadb                         # Vector store — persists SOP embeddings to disk
-google-genai                     # Google Generative AI SDK (underlying client)
-python-dotenv                    # Loads environment variables from .env file
+# API + web UI
+fastapi>=0.115
+uvicorn[standard]>=0.30
+streamlit>=1.38
+pydantic>=2.9
 
-# ── Monitoring ────────────────────────────────────────────────────────────────
-prometheus-client           # Exposes /metrics endpoint scraped by Prometheus
+# RAG / LLM
+langchain>=1.0
+langchain-core>=1.0
+langchain-community>=0.3
+langchain-google-genai>=2.0
+langchain-chroma>=0.2
+langchain-text-splitters>=0.3
+chromadb>=0.5
+google-genai>=1.0
 
-# ── Web Application ───────────────────────────────────────────────────────────
-streamlit                   # UI framework — Technician (:8501) + Owner (:8502)
+# Monitoring + database
+prometheus-client>=0.20
+psycopg2-binary>=2.9
 
-# ── Database ──────────────────────────────────────────────────────────────────
-psycopg2-binary             # PostgreSQL connector
-
-# ── Core Data Handling ────────────────────────────────────────────────────────
-pandas                      # DataFrame operations, Excel reading, CSV export
-numpy                       # Numerical operations, sensor array construction
-openpyxl                    # Reads Vehicle_Sensor_TestSet_v2.xlsx for DB seeding
-
-# ── Machine Learning ──────────────────────────────────────────────────────────
-scikit-learn                # ML classifiers: SVM (Track 1), LogReg (Track 2)
-joblib                      # Model serialisation: saves/loads .pkl files
-
-# ── Visualisation ─────────────────────────────────────────────────────────────
-matplotlib                  # Charts in research notebooks and dashboard.py
-seaborn                     # Statistical plots in model research notebook
+# Research notebooks + visualisation
+matplotlib>=3.8
+seaborn>=0.13
+jupyterlab>=4.0
+ipykernel>=6.0
+nbformat>=5.0
