@@ -21,8 +21,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from src.logger import read_logs_as_df, COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN
+from predictivecare.logger import read_logs_as_df, COST_INPUT_PER_TOKEN, COST_OUTPUT_PER_TOKEN
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
