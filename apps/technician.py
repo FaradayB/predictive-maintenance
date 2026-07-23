@@ -53,15 +53,15 @@ def api_health() -> dict:
  
 # ── Fallback direct imports if API not available ───────────────────────────
 try:
-    from database import get_track1_history, get_query_log
+    from predictivecare.database import get_track1_history, get_query_log
     DB_AVAILABLE = True
 except Exception:
     DB_AVAILABLE = False
  
 try:
-    from rag_pipeline import build_vectorstore
-    from llm_chain import build_chains
-    from monitoring import start_metrics_server, set_active_sessions
+    from predictivecare.rag import build_vectorstore
+    from predictivecare.llm import build_chains
+    from predictivecare.monitoring import start_metrics_server, set_active_sessions
     LLM_AVAILABLE = True
     try:
         start_metrics_server(port=8000)
@@ -231,12 +231,12 @@ def priority_html(level):
 
 @st.cache_resource(show_spinner=False)
 def load_vectorstore():
-    from rag_pipeline import build_vectorstore
+    from predictivecare.rag import build_vectorstore
     return build_vectorstore(force_rebuild=False)
  
 @st.cache_resource(show_spinner=False)
 def load_chains(_vs):
-    from llm_chain import build_chains
+    from predictivecare.llm import build_chains
     return build_chains(_vs)
  
  
@@ -250,7 +250,7 @@ def run_chat_query(question: str, result: dict) -> str:
     try:
         # ── Safety: sanitise query before hitting the LLM ─────────────────
         try:
-            from src.safety import sanitise_chat_query
+            from predictivecare.safety import sanitise_chat_query
             ok, cleaned = sanitise_chat_query(question, track=1)
             if not ok:
                 return f"⚠️ {cleaned}"
@@ -264,7 +264,7 @@ def run_chat_query(question: str, result: dict) -> str:
         if st.session_state.chains is None:
             st.session_state.chains = load_chains(st.session_state.vectorstore)
  
-        from rag_pipeline import get_retriever, format_context
+        from predictivecare.rag import get_retriever, format_context
         from langchain_core.prompts import ChatPromptTemplate
         from langchain_core.output_parsers import StrOutputParser
  
