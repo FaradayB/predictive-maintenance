@@ -8,3 +8,12 @@ logs/
 *.log
 .venv/
 .conda/
+
+# Trained models — regenerate with `python ml/train.py`
+models/
+# RAG vector store — rebuilt from docs/
+chroma_db/
+# Packaging artifacts
+*.egg-info/
+dist/
+build/
