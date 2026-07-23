@@ -39,6 +39,8 @@ import psycopg2
 import psycopg2.extras
 from dotenv import load_dotenv
 
+from predictivecare import config
+
 load_dotenv()
 log = logging.getLogger(__name__)
 
@@ -47,14 +49,14 @@ log = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 DB_CONFIG = {
-    "host":     os.getenv("DB_HOST",     "localhost"),
-    "port":     int(os.getenv("DB_PORT", "5432")),
-    "dbname":   os.getenv("DB_NAME",     "vehicle_maintenance"),
-    "user":     os.getenv("DB_USER",     "vpm_user"),
-    "password": os.getenv("DB_PASSWORD", ""),
+    "host":     config.DB_HOST,
+    "port":     int(config.DB_PORT),
+    "dbname":   config.DB_NAME,
+    "user":     config.DB_USER,
+    "password": config.DB_PASSWORD,
 }
 
-EXCEL_PATH = os.getenv("DATASET_PATH", "Vehicle_Sensor_TestSet.xlsx")
+EXCEL_PATH = config.DATASET_PATH
 
 
 # ─────────────────────────────────────────────────────────────────────────────
